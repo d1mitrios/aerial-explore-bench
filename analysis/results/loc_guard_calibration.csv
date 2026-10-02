@@ -1,0 +1,3 @@
+arm,batch,updates,err_gt1_pct,share_known_free_pct,err_gt1_known_free_pct,share_within_0.5m_pct,err_gt1_within_0.5m_pct,share_0.5_to_1.5m_pct,err_gt1_0.5_to_1.5m_pct,share_beyond_1.5m_pct,err_gt1_beyond_1.5m_pct,tours_lost,flagged,flagged_before_loss,healthy_median_err_m
+aerial,runs/raw/batch,10341,5.3,79.3,0.8,4.6,25.4,9.3,17.2,6.8,27.5,12,11,9,0.094
+wheeled,runs/raw/wbatch3,15856,15.3,64.8,2.4,6.3,17.7,15.7,20.9,13.1,70.9,22,22,18,0.071

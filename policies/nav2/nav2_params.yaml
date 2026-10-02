@@ -1,0 +1,368 @@
+# aerial-explore-bench: the Nav2 configuration of the reference arm, the predecessor's revised
+# configuration (sim-nav-benchmark, ros/nav2_params.yaml, October 2026, md5 9f696af1) with one
+# correction for this setup, marked below: the transform tolerance of the controller and the
+# behaviours is 2.0 s. It needs the static frame base_axle (x -0.10 m from base_link), which
+# missions/wheeled_nav.sh publishes when the params refer to it (the predecessor's nav_batch.sh in the
+# header below). This repository's copy of the first configuration, in its v8 form with three
+# corrections of its own, is nav2_params_v8.yaml. Adapted from the Nav2 parameter files
+# (github.com/ros-navigation/navigation2, nav2_bringup: Apache-2.0; the amcl section, nav2_amcl:
+# LGPL-2.1-or-later), under those licenses.
+# === Nav2 (Jazzy 1.3.12), revised configuration (October 2026), experiments 7 and 8 ===
+# The AMCL block is the v9 block of experiment 5 (nav2_params_v9.yaml) with the changes in 7.
+# Every change answers a failure seen in the v9 logs and the ground truth:
+#  1. Rotation centre. base_link is the chassis centre (the lidar), the wheel axle is 0.10 m
+#     behind it. The controller, the recoveries and the local costmap now work in base_axle,
+#     a static frame published by nav_batch.sh, so their motion model turns the robot about
+#     the point it really turns about.
+#  2. Footprint. The true body (chassis 0.40 x 0.30 m, wheels out to 0.195 m, camera to
+#     0.22 m) plus 2 cm, as a polygon in base_axle. v9 used a 0.22 m circle, which missed the
+#     chassis corners (0.25 m from the centre).
+#  3. Planner radius 0.25 m about the chassis centre, the circle that holds the whole body.
+#     v9 planned with 0.30 m while the controller drove with 0.22 m, so the robot often
+#     stopped closer to an obstacle than the planner accepts as a start, and from there no
+#     later goal of the tour could be planned.
+#  4. Reverse. DWB had min_vel_x -0.08 but the velocity smoother clamped x at 0.0, so a
+#     reverse command never reached the wheels.
+#  5. Collision monitor out of the command path. Its 0.23 m stop circle is 3.5 cm wider than
+#     half the body and stops every motion, turning and reversing included, so one close
+#     pass froze the robot for the rest of the tour. At low real-time factors it also stopped
+#     the robot whenever scan and odometry were out of step ("invalid source"). Collision
+#     checking stays in the controller, against the true footprint.
+#  6. Behaviour tree: Nav2's navigate_w_recovery_and_replanning_only_if_path_becomes_invalid.
+#     v9 replanned once per second, and a single failed replan in a door mouth halted the
+#     controller and started the recoveries (spin, back up) inside the door.
+#  7. AMCL. (a) base_frame_id base_axle, initial pose x -0.10 (the axle at the spawn). With
+#     base_link at the chassis centre, an in-place turn moves the base frame sideways by more
+#     than 1 cm per filter update. Nav2's differential motion model then reads a 90 degree
+#     bearing and spreads the particles by about 45 degrees and 1 m at every such update. In
+#     experiment 6, 81% of the jumps in the estimate's covariance came during in-place turns,
+#     which make up 53% of the filter updates.
+#     (b) No random particle injection (recovery_alpha_slow and _fast 0.0, the Nav2 default).
+#     v8 and v9 injected random particles whenever the scan match got worse, which let a
+#     spread-out estimate settle in a look-alike room. The start pose is known in every
+#     world, so global relocalization is never needed.
+#  8. No commands inside the drive's deadband. The simulated drive does not move the robot
+#     below about 0.03 m/s and 0.1 rad/s (pure turns under 0.1 rad/s: 1% of 7680 samples
+#     moved), yet 39% of v9's motion commands in experiment 6 were slower than both 0.03 m/s
+#     and 0.15 rad/s. DWB now rejects such trajectories (a twist is dropped when it is below
+#     both min_speed_xy and min_speed_theta), so a robot without a faster option fails over
+#     to the recoveries instead of creeping on the spot until the progress checker gives up.
+# Wall-clock stack (use_sim_time: false everywhere, consistent with the scan/odom publishers).
+# Initial pose KNOWN: spawn (0,0,yaw 0) in every world, the axle at x -0.10 -> set_initial_pose: true.
+amcl:
+  ros__parameters:
+    use_sim_time: false
+    base_frame_id: base_axle      # v9: base_link, see the header (7a)
+    odom_frame_id: odom
+    global_frame_id: map
+    scan_topic: /scan
+    laser_max_range: 12.0
+    laser_min_range: 0.15
+    max_beams: 120
+    # v9 sparse-map tuning (experiment 5). The maps cover 47-92% of the walls, so in
+    # sparsely mapped rooms many beams hit walls the map does not contain, the particle
+    # weights collapse and the stack reports arrivals it never made (v8, experiment 4).
+    min_particles: 500        # v8: 300, more hypotheses under ambiguity
+    max_particles: 4000       # v8: 1500
+    alpha1: 0.25              # v8: 0.15, wider motion noise (odometry noise 3%/5% and RTF jitter)
+    alpha2: 0.25
+    alpha3: 0.25
+    alpha4: 0.25
+    update_min_d: 0.10        # v8: 0.15, more frequent filter updates
+    update_min_a: 0.12        # v8: 0.15
+    resample_interval: 2      # v8: 1, half the resampling, less particle depletion
+    transform_tolerance: 0.5
+    recovery_alpha_slow: 0.0      # v9: 0.001 and 0.1 (random particle injection), see the header
+    recovery_alpha_fast: 0.0
+    # beams the map cannot explain (unmapped walls and furniture)
+    z_hit: 0.4                # Nav2 default 0.5, less weight on the map match
+    z_rand: 0.6               # Nav2 default 0.5, unexplained beams are not punished
+    sigma_hit: 0.35           # Nav2 default 0.2, tolerance for blurred map walls
+    laser_likelihood_max_dist: 3.0   # Nav2 default 2.0
+    set_initial_pose: true
+    initial_pose:
+      x: -0.10                    # the wheel axle at the spawn
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
+    always_reset_initial_pose: true
+    tf_broadcast: true
+    robot_model_type: nav2_amcl::DifferentialMotionModel
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: false
+    global_frame: map
+    robot_base_frame: base_link
+    odom_topic: /odom
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    wait_for_service_timeout: 1000
+    default_nav_to_pose_bt_xml: "/opt/ros/jazzy/share/nav2_bt_navigator/behavior_trees/navigate_w_recovery_and_replanning_only_if_path_becomes_invalid.xml"
+
+controller_server:
+  ros__parameters:
+    use_sim_time: false
+    controller_frequency: 10.0
+    min_x_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 3.0   # v7: DWB tolerance for momentary dead-ends (narrows/pockets)
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.25
+      movement_time_allowance: 90.0   # RTF~0.5 + walkers that block: patience ~45 sim-s
+    general_goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.35
+      yaw_goal_tolerance: 6.28
+      stateful: true
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      min_vel_x: -0.10   # reverse, now let through by the velocity smoother
+      max_vel_x: 0.30
+      min_vel_y: 0.0
+      max_vel_y: 0.0
+      max_vel_theta: 1.2
+      min_speed_xy: 0.03     # with min_speed_theta: no command inside the drive's deadband (8)
+      max_speed_xy: 0.30
+      min_speed_theta: 0.15
+      acc_lim_x: 0.6
+      acc_lim_y: 0.0
+      acc_lim_theta: 2.0
+      decel_lim_x: -0.8
+      decel_lim_y: 0.0
+      decel_lim_theta: -2.5
+      vx_samples: 16
+      vy_samples: 1
+      vtheta_samples: 20
+      sim_time: 1.6
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      # aerial-explore-bench correction: 2.0 s (the predecessor's 0.4). Isaac stamps the scan and the
+      # odometry on Windows while Nav2 runs in WSL, and at this real-time factor the newest map->odom
+      # (AMCL's in the tours, slam_toolbox's while exploring) was measured 1.1 to 3.2 s older than the
+      # robot pose; past the tolerance FollowPath cannot place the robot on its plan and aborts. map->odom
+      # is a slow correction, so a 2 s old one is harmless.
+      transform_tolerance: 2.0
+      xy_goal_tolerance: 0.35
+      trans_stopped_velocity: 0.05
+      short_circuit_trajectory_evaluation: true
+      stateful: true
+      critics: ["RotateToGoal", "Oscillation", "ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      ObstacleFootprint.scale: 0.02
+      PathAlign.scale: 32.0
+      PathAlign.forward_point_distance: 0.4
+      GoalAlign.scale: 24.0
+      GoalAlign.forward_point_distance: 0.4
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      RotateToGoal.scale: 32.0
+      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.lookahead_time: -1.0
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      use_sim_time: false
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: base_axle   # the wheel axle, the point the robot turns about
+      rolling_window: true
+      width: 5
+      height: 5
+      resolution: 0.05
+      # true body + 2 cm, in base_axle (x forward): camera and chassis front at 0.32, chassis
+      # +-0.15 wide, wheels +-0.195 around the axle, chassis rear at -0.10
+      footprint: "[[0.34, 0.17], [0.34, -0.17], [0.08, -0.215], [-0.12, -0.215], [-0.12, 0.215], [0.08, 0.215]]"
+      footprint_padding: 0.0
+      plugins: ["obstacle_layer", "inflation_layer"]
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: true
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: true
+          marking: true
+          data_type: "LaserScan"
+          raytrace_max_range: 6.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 4.5
+          obstacle_min_range: 0.0
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.35     # a cost gradient only, collisions are checked against the footprint
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      use_sim_time: false
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: base_link
+      robot_radius: 0.25   # circle about the chassis centre that holds the whole body.
+      resolution: 0.05     # Seals doors below about 0.55 m (v2.9.1 never crossed one below 0.57)
+      track_unknown_space: false
+      # v6: NO live obstacle layer on the GLOBAL - walkers got marked permanently at
+      # spots the lidar never saw again (no clearing) and sealed corridors after
+      # an hour of session. Planning happens on the static map, people are handled
+      # by the LOCAL costmap (rolling, with raytrace clearing on every scan).
+      plugins: ["static_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: true
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 4.0
+        inflation_radius: 0.55   # keeps paths in the middle of doors and corridors
+
+map_server:
+  ros__parameters:
+    use_sim_time: false
+    yaml_filename: ""   # bringup fills this in from the map:= launch argument
+
+map_saver:
+  ros__parameters:
+    use_sim_time: false
+    save_map_timeout: 10.0
+    free_thresh_default: 0.196
+    occupied_thresh_default: 0.65
+
+docking_server:
+  ros__parameters:
+    use_sim_time: false
+    controller_frequency: 10.0
+    initial_perception_timeout: 5.0
+    wait_charge_timeout: 5.0
+    dock_approach_timeout: 30.0
+    undock_linear_tolerance: 0.05
+    undock_angular_tolerance: 0.1
+    max_retries: 1
+    base_frame: "base_link"
+    fixed_frame: "odom"
+    dock_backwards: false
+    dock_prestaging_tolerance: 0.5
+    dock_plugins: ["simple_charging_dock"]
+    simple_charging_dock:
+      plugin: "opennav_docking::SimpleChargingDock"
+      docking_threshold: 0.05
+      staging_x_offset: -0.7
+      use_external_detection_pose: false
+      use_battery_status: false
+      use_stall_detection: false
+    # (no 'docks' - an empty list crashes the launch, and the robot does not dock)
+    controller:
+      k_phi: 3.0
+      k_delta: 2.0
+      v_linear_min: 0.05
+      v_linear_max: 0.25
+
+planner_server:
+  ros__parameters:
+    use_sim_time: false
+    expected_planner_frequency: 1.0
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner::NavfnPlanner"
+      tolerance: 0.5
+      use_astar: true
+      allow_unknown: false
+
+smoother_server:
+  ros__parameters:
+    use_sim_time: false
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+
+behavior_server:
+  ros__parameters:
+    use_sim_time: false
+    local_costmap_topic: local_costmap/costmap_raw
+    global_costmap_topic: global_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_footprint_topic: global_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
+    spin:
+      plugin: "nav2_behaviors::Spin"
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors::DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+    local_frame: odom
+    global_frame: map
+    robot_base_frame: base_axle   # spin and back up are simulated about the wheel axle
+    # aerial-explore-bench correction: 2.0 s as the controller's (see FollowPath above).
+    transform_tolerance: 2.0
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.0
+    min_rotational_vel: 0.3
+    rotational_acc_lim: 2.0
+
+waypoint_follower:
+  ros__parameters:
+    use_sim_time: false
+    loop_rate: 20
+    stop_on_failure: false
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+      enabled: true
+      waypoint_pause_duration: 200
+
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: false
+    smoothing_frequency: 20.0
+    scale_velocities: false
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.30, 0.0, 1.2]
+    min_velocity: [-0.15, 0.0, -1.2]   # v9 had 0.0 here, which cut every reverse command
+    max_accel: [0.6, 0.0, 2.0]
+    max_decel: [-0.8, 0.0, -2.5]
+    odom_topic: "odom"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0
+
+collision_monitor:
+  ros__parameters:
+    use_sim_time: false
+    # out of the command path (see the header): the polygon and the source are disabled, so
+    # the monitor passes the smoothed command through unchanged
+    base_frame_id: "base_axle"
+    odom_frame_id: "odom"
+    cmd_vel_in_topic: "cmd_vel_smoothed"
+    cmd_vel_out_topic: "cmd_vel"
+    state_topic: "collision_monitor_state"
+    transform_tolerance: 0.5
+    source_timeout: 2.0
+    base_shift_correction: true
+    stop_pub_timeout: 2.0
+    polygons: ["CircleStop"]
+    CircleStop:
+      type: "circle"          # v5: circle instead of square - the 0.28-box corners
+      radius: 0.23            # reached 0.40 m and "bit" the jambs at the 0.69 doors
+      action_type: "stop"
+      min_points: 4
+      visualize: false
+      enabled: false
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "/scan"
+      min_height: 0.0
+      max_height: 2.0
+      enabled: false

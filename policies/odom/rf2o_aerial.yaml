@@ -1,0 +1,21 @@
+# === rf2o_laser_odometry for the quadrotor ===
+# Adapted from rf2o_laser_odometry (github.com/MAPIRlab/rf2o_laser_odometry); GPL-3.0, as the original.
+# The package's launch-file defaults with three changes, each with its reason:
+#   laser_scan_topic /scan_odom:   the bridge's copy of /scan with the lidar's misses (100 m)
+#                                  zeroed; rf2o takes every positive range as a return
+#   init_pose_from_topic "":       the package default waits for /base_pose_ground_truth and
+#                                  never starts; empty = the odometry starts at zero on the
+#                                  first scan (the spawn, as AMCL's initial pose expects)
+#   freq 50.0:                    the node's WALL-clock loop rate (it processes the latest
+#                                  scan per iteration); 50 keeps up with 20 Hz sim scans at
+#                                  any RTF (10 in the package default)
+# Loaded by missions/aerial_odom.sh (node renamed rf2o_laser_odometry as in the launch file).
+rf2o_laser_odometry:
+  ros__parameters:
+    laser_scan_topic: /scan_odom
+    odom_topic: /odom_rf2o
+    publish_tf: true
+    base_frame_id: base_link
+    odom_frame_id: odom
+    init_pose_from_topic: ""
+    freq: 50.0

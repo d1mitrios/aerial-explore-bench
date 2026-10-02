@@ -1,0 +1,3 @@
+arm,batch,tours,lost_tours,onsets_off_map,metres_on_map,metres_off_map,losses_per_100m_off,odom_err_median_m,odom_err_max_m,contact_before_onset,tours_lost_at_failed_goal,goals_after_loss,failed_after_loss,false_claims,false_belief_err_min_m,false_belief_err_max_m
+revised,runs/raw/wbatch_nav2rev,40,23,22,2108,1172,1.88,0.018,0.398,1,18,48,48,7,2.97,18.27
+first,runs/raw/wbatch2,40,5,5,969,269,1.86,0.01,0.074,0,5,15,15,3,1.85,13.37

@@ -1,0 +1,58 @@
+# The checks that need neither Isaac Sim nor ROS: the code compiles and lints, the runners' command
+# lines are complete, the offline mocks fly the shared executive (missions/mock/README.md) and judge
+# every claim against their own truth, and the analysis scripts stop cleanly without run data.
+# Started by hand only (Actions -> checks -> Run workflow). The actions are pinned to their commits
+# and the Python packages to the versions the checks passed with, so one run differs from the next
+# only in the runner image.
+name: checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1        # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0    # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: >
+          pip install numpy==2.5.4 matplotlib==3.11.2 PyYAML==6.0.3 pymavlink==2.4.50 pyflakes==4.0.3
+          contourpy==1.4.0 cycler==0.12.1 fastcrc==0.5.0 fonttools==4.67.0 kiwisolver==1.5.1
+          lxml==6.1.3 packaging==26.3 pillow==13.0.0 pyparsing==3.3.3 python-dateutil==3.0.0
+          six==1.17.0 tzdata==2026.5
+      - name: Compile and lint
+        run: |
+          python -m py_compile $(git ls-files '*.py')
+          python -m pyflakes analysis missions worlds
+      - name: Command lines
+        run: python missions/cli_check.py
+      - name: Mission mocks
+        working-directory: missions/mock
+        run: |
+          python mock_exec_test.py 3 amcl
+          AMCL_FAIL=2.5,6.5,-1,2.5 python mock_exec_test.py 3 amcl
+          AMCL_FAIL=2.5,6.5,-1,2.5 AMCL_FAIL_MODE=jump python mock_exec_test.py 3 amcl
+          python ground_mock_test.py 3 amcl
+          AMCL_FAIL=2.5,6.5,-1,2.5 python ground_mock_test.py 3 amcl
+      - name: Exploration, wheeled runners and geometry mocks
+        working-directory: missions/mock
+        run: |
+          BUDGETS=1,2.5 python mock_explore_test.py
+          GROUND=1 BUDGETS=1,2.5 python mock_explore_test.py
+          python wheeled_mock_test.py
+          python settle_test.py
+          python door_geom_test.py
+          python slot_test.py
+      - name: Analysis without run data
+        run: |
+          for s in summarize_arms goal_outcomes loc_guard_compare collision_sources nav2_localization paired_worlds; do
+            set +e; python analysis/$s.py; rc=$?; set -e
+            test "$rc" -eq 1
+          done

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use the benchmark or its numbers, please cite the report below."
+title: "aerial-explore-bench"
+abstract: "A simulation benchmark that measures how the time a robot spends exploring an unknown building turns into navigation goals it verifiably reaches, for a quadrotor and a wheeled robot in the same seeded indoor worlds."
+authors:
+  - family-names: Gkiokas
+    given-names: Dimitrios
+version: 1.0.0
+license: MIT
+repository-code: "https://github.com/d1mitrios/aerial-explore-bench"
+keywords:
+  - robotics
+  - quadrotor
+  - mobile robot
+  - exploration
+  - localization
+  - simulation
+preferred-citation:
+  type: report
+  title: "Exploration budget and verified navigation success: a quadrotor and a wheeled robot in the same simulated rooms"
+  authors:
+    - family-names: Gkiokas
+      given-names: Dimitrios
+  year: 2026
+  month: 10
+  url: "https://github.com/d1mitrios/aerial-explore-bench/releases/download/v1.0.0/report.pdf"

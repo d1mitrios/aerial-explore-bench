@@ -1,0 +1,16 @@
+comparison,budget_min,worlds,mean_goals,lo_goals,hi_goals,mean_points,lo_points,hi_points,worlds_up,worlds_equal,worlds_down,sign_test_p
+aerial_minus_wheeled,1.0,10,-1.0,-1.6,-0.5,-16.7,-26.7,-8.3,0,3,7,0.0156
+aerial_minus_wheeled,2.5,10,0.1,-0.6,0.8,1.7,-10.0,13.3,4,3,3,1.0
+aerial_minus_wheeled,5.0,10,0.7,-0.3,1.8,11.7,-5.0,30.0,5,1,4,1.0
+aerial_minus_wheeled,10.0,10,0.0,-0.7,0.7,-0.0,-11.7,11.7,4,2,4,1.0
+aerial_minus_wheeled,all,10,-0.2,-1.8,1.6,-0.8,-7.9,6.7,3,2,5,0.7266
+wheeled_minus_wheeled_nav2,1.0,10,1.0,0.4,1.7,16.7,6.7,28.3,6,4,0,0.0312
+wheeled_minus_wheeled_nav2,2.5,10,0.9,0.0,1.8,15.0,-0.0,30.0,6,3,1,0.125
+wheeled_minus_wheeled_nav2,5.0,10,0.3,-0.7,1.2,5.0,-11.7,20.0,5,2,3,0.7266
+wheeled_minus_wheeled_nav2,10.0,10,0.5,-0.5,1.6,8.3,-8.3,26.7,4,3,3,1.0
+wheeled_minus_wheeled_nav2,all,10,2.7,1.2,4.6,11.2,5.0,19.6,9,0,1,0.0215
+wheeled_nav2_minus_first,1.0,10,0.4,-0.2,1.1,6.7,-3.3,18.3,4,4,2,0.6875
+wheeled_nav2_minus_first,2.5,10,0.4,-0.8,1.5,6.7,-11.7,25.0,5,1,4,1.0
+wheeled_nav2_minus_first,5.0,10,1.2,0.0,2.5,20.0,-0.0,41.7,5,2,3,0.7266
+wheeled_nav2_minus_first,10.0,10,2.0,0.9,3.1,31.7,11.7,51.7,8,0,2,0.1094
+wheeled_nav2_minus_first,all,10,4.0,0.8,7.4,15.9,1.6,30.4,7,2,1,0.0703

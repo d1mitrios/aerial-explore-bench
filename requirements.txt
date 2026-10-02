@@ -1,0 +1,8 @@
+# Python packages the repository's scripts need besides ROS 2 Jazzy and its Python packages
+# (pip install -r requirements.txt, in a virtual environment on Ubuntu 24.04).
+# The analysis scripts, the figures and the offline mocks (missions/mock/) need only the first three.
+numpy
+matplotlib
+PyYAML
+# The quadrotor's executive talks MAVLink to PX4 SITL (missions/aerial_mission_runner.py).
+pymavlink

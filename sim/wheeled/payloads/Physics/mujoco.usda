@@ -1,0 +1,159 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "my_custom_robot"
+    doc = """Generated from Composed Stage of root layer <temp>\\tmpog1oyg93\\my_custom_robot.usdc
+
+
+Generated from Composed Stage of root layer <temp>\\urdf_import_my_robot_rg859r5h\\usdex_my_robot\\my_custom_robot.usdc
+
+
+Generated from Composed Stage of root layer <temp>\\urdf_import_my_robot_rg859r5h\\temp_my_robot\\my_robot.usd
+
+
+Generated from Composed Stage of root layer <import>\\payloads\\base.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    subLayers = [
+        @./physics.usda@
+    ]
+    upAxis = "Z"
+)
+
+over "my_custom_robot"
+{
+    over "Physics"
+    {
+        def MjcActuator "left_wheel_joint_actuator"
+        {
+            uniform double mjc:forceRange:max = inf
+            uniform double mjc:forceRange:min = -inf
+            custom rel mjc:target
+            prepend rel mjc:target = </my_custom_robot/Physics/left_wheel_joint>
+        }
+
+        def MjcActuator "right_wheel_joint_actuator"
+        {
+            uniform double mjc:forceRange:max = inf
+            uniform double mjc:forceRange:min = -inf
+            custom rel mjc:target
+            prepend rel mjc:target = </my_custom_robot/Physics/right_wheel_joint>
+        }
+
+        over "root_joint"
+        {
+        }
+
+        over "left_wheel_joint" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "right_wheel_joint" (
+            delete apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+        }
+
+        over "caster_joint"
+        {
+        }
+
+        over "lidar_joint"
+        {
+        }
+
+        over "camera_joint"
+        {
+        }
+    }
+
+    over "Geometry"
+    {
+        over "chassis"
+        {
+            over "left_wheel"
+            {
+                over "cylinder"
+                {
+                }
+
+                over "cylinder_1"
+                {
+                }
+            }
+
+            over "right_wheel"
+            {
+                over "cylinder"
+                {
+                }
+
+                over "cylinder_1"
+                {
+                }
+            }
+
+            over "caster_wheel"
+            {
+                over "sphere"
+                {
+                }
+
+                over "sphere_1"
+                {
+                }
+            }
+
+            over "lidar_link"
+            {
+                over "cylinder"
+                {
+                }
+            }
+
+            over "camera_link"
+            {
+                over "box"
+                {
+                }
+            }
+
+            over "box"
+            {
+            }
+
+            over "box_1"
+            {
+            }
+        }
+    }
+
+    over "Materials"
+    {
+        over "blue"
+        {
+        }
+
+        over "black"
+        {
+        }
+
+        over "grey"
+        {
+        }
+
+        over "red"
+        {
+        }
+
+        over "green"
+        {
+        }
+    }
+}
+
