@@ -1,0 +1,124 @@
+%YAML:1.0 # need to specify the file type at the top!
+# AERIAL-EXPLORE-BENCH A6: OpenVINS mono config for the Pegasus/Isaac sim.
+# Adapted from OpenVINS (github.com/rpng/open_vins, config/rpng_sim); GPL-3.0, as the original.
+# Base: config/rpng_sim at the pinned commit (0bd027a, PR #500 fork).
+# Edits vs template (each one observed to be necessary on the first A6 run,
+# 2026-08-30; everything else = defaults):
+#   - mono (1 camera), online calibration OFF (sim calibration is exact)
+#   - init_imu_thresh 1.0 -> 0.20 (2026-09-06; was 0.08 from 2026-08-30).
+#     The static initializer's metric is the sample std of the 3-axis
+#     accelerometer vector over init_window_time; for this IMU model
+#     (Pegasus imu.py: sigma = noise_density / sqrt(dt) per axis, noise
+#     density 4.0e-3, 250 Hz) the PARKED drone measures
+#     0.004 * sqrt(250) * sqrt(3) = 0.1095; observed 0.106-0.108 on the
+#     ov_msckf console with the drone parked and disarmed. The first value 0.08
+#     sat BELOW that floor, so "static" was never detected and the early "takeoff
+#     jerk of 0.109" was the floor itself, not the takeoff. 0.20 clears the
+#     floor with margin; the liftoff is made abrupt by protocol (executive:
+#     MPC_TKO_RAMP_T 0.5 s, arm and climb in one move after a disarmed,
+#     parked window) so the newest window exceeds 0.20 at liftoff. The
+#     default 1.0 would still never fire on a 1.3 m takeoff.
+#   - init_max_disparity 1.5 -> 4.0 (2026-09-06): the parked drone's
+#     feature tracks jitter by 0.6-2.6 px on the flat-shaded prisms (weak
+#     FAST-7 corners), so 1.5 px classified the parked drone as "moving"
+#     half the time; the liftoff moves features by tens of px.
+#   - init_dyn_use false (and init_dyn_min_deg kept at 5 for reference): the
+#     dynamic initializer on takeoff dynamics with immature feature tracks
+#     produced diverging states (runs of 2026-08-30: |p| ran away by 10s-1000s
+#     of meters). Static-only is the reliable path here: a long parked stream
+#     warms the tracker, and the jerk threshold fires at the abrupt liftoff.
+#     Protocol: start ov_msckf 1-2 min BEFORE takeoff.
+#   - fast_threshold 15 -> 7, min_px_dist 15 -> 10: the worlds (from v1, the predecessor project) are
+#     flat-shaded prisms (no texture); the tracker held <25 features with
+#     the defaults; lower-contrast corners must be admitted
+#   - gravity_mag = 9.80665 (Pegasus GRAVITY_VECTOR, geo_mag_utils.py)
+
+verbosity: "INFO"
+
+use_fej: true
+integration: "rk4"
+use_stereo: false
+max_cameras: 1
+
+calib_cam_extrinsics: false
+calib_cam_intrinsics: false
+calib_cam_timeoffset: false
+calib_imu_intrinsics: false
+calib_imu_g_sensitivity: false
+
+max_clones: 11
+max_slam: 50
+max_slam_in_update: 25
+max_msckf_in_update: 10
+dt_slam_delay: 2
+
+gravity_mag: 9.80665
+
+feat_rep_msckf: "GLOBAL_3D"
+feat_rep_slam: "GLOBAL_3D"
+feat_rep_aruco: "GLOBAL_3D"
+
+try_zupt: false
+zupt_chi2_multipler: 1
+zupt_max_velocity: 0.1
+zupt_noise_multiplier: 1
+zupt_max_disparity: 0
+zupt_only_at_beginning: false
+
+init_window_time: 2.0
+init_imu_thresh: 0.20
+init_max_disparity: 4.0
+init_max_features: 15
+
+init_dyn_use: false
+init_dyn_mle_opt_calib: false
+init_dyn_mle_max_iter: 50
+init_dyn_mle_max_time: 0.5
+init_dyn_mle_max_threads: 6
+init_dyn_num_pose: 6
+init_dyn_min_deg: 5.0
+
+init_dyn_inflation_ori: 10
+init_dyn_inflation_vel: 100
+init_dyn_inflation_bg: 10
+init_dyn_inflation_ba: 100
+init_dyn_min_rec_cond: 1e-15
+
+init_dyn_bias_g: [0.0, 0.0, 0.0]
+init_dyn_bias_a: [0.0, 0.0, 0.0]
+
+record_timing_information: false
+record_timing_filepath: "/tmp/traj_timing.txt"
+
+save_total_state: false
+filepath_est: "/tmp/ov_estimate.txt"
+filepath_std: "/tmp/ov_estimate_std.txt"
+filepath_gt: "/tmp/ov_groundtruth.txt"
+
+use_klt: true
+num_pts: 250
+fast_threshold: 7
+grid_x: 20
+grid_y: 20
+min_px_dist: 10
+knn_ratio: 0.70
+track_frequency: 20.0
+downsample_cameras: false
+num_opencv_threads: 4
+histogram_method: "HISTOGRAM"
+
+use_aruco: false
+num_aruco: 1024
+downsize_aruco: true
+
+up_msckf_sigma_px: 1
+up_msckf_chi2_multipler: 1
+up_slam_sigma_px: 1
+up_slam_chi2_multipler: 1
+up_aruco_sigma_px: 1
+up_aruco_chi2_multipler: 1
+
+use_mask: false
+
+relative_config_imu: "kalibr_imu_chain.yaml"
+relative_config_imucam: "kalibr_imucam_chain.yaml"

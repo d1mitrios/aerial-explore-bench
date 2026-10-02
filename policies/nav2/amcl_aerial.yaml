@@ -1,0 +1,67 @@
+# === AMCL for the quadrotor's mission phase ===
+# Adapted from the Nav2 AMCL parameters (github.com/ros-navigation/navigation2, nav2_amcl); LGPL-2.1-or-later, as the original.
+# Derived from the wheeled baseline's nav2_params.yaml (v9, the predecessor's sparse-map tuning: the
+# `amcl:` block there is the reference; every number below is that block's unless a
+# comment says otherwise). Loaded by missions/aerial_amcl.sh through
+# nav2_bringup/localization_launch.py (map_server + amcl + lifecycle manager).
+#
+# Frames and clocks: /scan (Isaac, sim/lidar_raycast.py, frame lidar_link) and the
+# odometry (missions/aerial_odom.sh: rf2o lidar odometry, TF odom->base_link; static
+# base_link->lidar_link from missions/lidar_odom_bridge.py) are both stamped with the
+# SIMULATION clock, so AMCL's TF lookups at the scan stamp are consistent; the node clock
+# itself stays wall (use_sim_time: false, as the baseline): AMCL only uses it for its own
+# timers. (Until 2026-09-24 the odometry was OpenVINS through missions/vio_odom_bridge.py.)
+amcl:
+  ros__parameters:
+    use_sim_time: false
+    base_frame_id: base_link
+    odom_frame_id: odom
+    global_frame_id: map
+    scan_topic: /scan
+    laser_max_range: 12.0
+    laser_min_range: 0.15
+    max_beams: 120
+    min_particles: 300
+    max_particles: 1500
+    # Odometry noise: the baseline's values; with the lidar odometry (since 2026-09-24) the
+    # deviation below is withdrawn until a measured reason appears. History: with the VIO as
+    # the source (test flights, 2026-09-23/24) the raw scale wandered 0.65-1.8 over 3 m windows
+    # with heading errors up to 17 deg; nav2 spreads the particles by sqrt(alpha) * step,
+    # 0.15 at 0.15 m steps (0.058 m) was below that shortfall and the cloud lagged 0.5-0.8 m
+    # along obliquely seen walls, so the alphas were 0.4 at update_min_d 0.10 for those
+    # flights. rf2o's range-flow odometry is metric and drift-limited like wheel odometry.
+    alpha1: 0.15
+    alpha2: 0.15
+    alpha3: 0.15
+    alpha4: 0.15
+    alpha5: 0.15            # omni model only (lateral translation noise), at the baseline's level
+    update_min_d: 0.15
+    update_min_a: 0.15
+    resample_interval: 1
+    # 0.5 in the baseline. Kept at 1.0 (a maximum wait, wall time): rf2o's odometry for a
+    # scan follows the scan within milliseconds, but the message filter's wait covers a busy
+    # WSL side; with the VIO the odometry arrived up to an image period later (0.25-0.5 s
+    # wall at RTF 0.16-0.22), which is where the value came from.
+    transform_tolerance: 1.0
+    recovery_alpha_slow: 0.001
+    recovery_alpha_fast: 0.1
+    set_initial_pose: true  # the spawn, as in every baseline world; the odom frame is born
+    initial_pose:           # at the spawn too (rf2o starts at zero on its first scan)
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
+    always_reset_initial_pose: true
+    tf_broadcast: true
+    # The quadrotor is holonomic (crab flight through doors): omnidirectional
+    # motion model instead of the baseline's DifferentialMotionModel.
+    robot_model_type: nav2_amcl::OmniMotionModel
+
+map_server:
+  ros__parameters:
+    use_sim_time: false
+    # Filled in per run by missions/aerial_amcl.sh (absolute path of the world's frozen map,
+    # written into runs/raw/amcl_params_<seed>_<ts>.yaml). Never rely on the launch file's
+    # map:= argument alone: on nav2_bringup 1.3.12 this file's value took precedence over it,
+    # and an empty string here left map_server without a map (in a test flight, 2026-09-23).
+    yaml_filename: ""

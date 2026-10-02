@@ -1,0 +1,12 @@
+# world 20260723004: 10 goals, rooms round-robin by area, wall_margin=0.9 clearance=0.6 spacing=2.0, rng=default_rng(20260723004)
+mission,room,x,y
+g01,NE,3.83,3.66
+g02,NW,-7.99,-0.40
+g03,SE,5.05,-7.66
+g04,SW,-4.61,-6.19
+g05,NE,5.98,-0.83
+g06,NW,-8.72,6.12
+g07,SE,0.88,-8.79
+g08,SW,-5.03,-8.79
+g09,NE,1.80,6.58
+g10,NW,-6.66,3.12

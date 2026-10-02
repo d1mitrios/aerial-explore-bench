@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# ROS 2 / colcon workspaces
+build/
+install/
+log/
+
+# Run outputs written by the batch runners and the mock harnesses
+runs/raw/
+*.bag
+*.db3
+*.mcap
+
+# Default outputs of the analysis scripts when run by hand without --out
+analysis/tour_*.png
+analysis/explore_*.png
+analysis/lidar_check_*.png
+analysis/results/footprint_compare.csv
+
+# Isaac Sim / Omniverse
+.thumbs/
+*.usd~
+*.tmp
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
