@@ -1,0 +1,29 @@
+# slam_toolbox (online_async): the wheeled baseline's mapping params (the predecessor's Benchmark
+# Factory), copied verbatim except transform_timeout (below, measured reason).
+# Adapted from the slam_toolbox parameter files (github.com/SteveMacenski/slam_toolbox); LGPL-2.1, as the original.
+# Wall-clock compatible with the Isaac publishers (use_sim_time: false); scan and odometry
+# both carry sim-clock stamps. Arena 20x20 m, doors 0.5-0.95 m -> resolution 0.05.
+# Used by both embodiments: the aerial exploration through missions/aerial_slam.sh.
+slam_toolbox:
+  ros__parameters:
+    use_sim_time: false
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_link
+    scan_topic: /scan
+    mode: mapping
+    resolution: 0.05
+    max_laser_range: 12.0          # the scan reports RMAX=100 on misses, clipped here
+    minimum_time_interval: 0.2
+    transform_publish_period: 0.05
+    # 0.5 in the baseline. Kept at 1.0 (a maximum wait, wall time): the lidar odometry
+    # (rf2o) delivers the odom TF for a scan within milliseconds; the value came from
+    # the VIO chain, whose pose arrived up to one image period later (0.25-0.5 wall-s at
+    # RTF 0.15); the same argument as AMCL's transform_tolerance (policies/nav2/amcl_aerial.yaml).
+    transform_timeout: 1.0
+    minimum_travel_distance: 0.2
+    minimum_travel_heading: 0.2
+    scan_buffer_size: 20
+    do_loop_closing: true
+    map_update_interval: 2.0
+    debug_logging: false

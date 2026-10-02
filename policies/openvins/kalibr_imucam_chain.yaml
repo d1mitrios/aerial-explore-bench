@@ -1,0 +1,21 @@
+%YAML:1.0
+# AERIAL-EXPLORE-BENCH A6: camera-IMU chain for the forward camera of sim/aeb_flight.py.
+# Forward-looking pinhole camera, mounted 0.10 m ahead of the body origin.
+# IMU frame = FRD body (Pegasus IMU convention). Optical axes in FRD body:
+# x -> right (y_frd), y -> down (z_frd), z -> forward (x_frd).
+# These values are exact by construction (set in sim/aeb_flight.py, VioSensorKit), so online
+# calibration is disabled in estimator_config.yaml.
+
+cam0:
+  T_imu_cam: # rotation from camera to IMU R_CtoI, position of camera in IMU p_CinI
+    - [0.0, 0.0, 1.0, 0.10]
+    - [1.0, 0.0, 0.0, 0.00]
+    - [0.0, 1.0, 0.0, 0.00]
+    - [0.0, 0.0, 0.0, 1.0]
+  cam_overlaps: []
+  camera_model: pinhole
+  distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
+  distortion_model: radtan
+  intrinsics: [380.03, 380.04, 320.0, 240.0] # fu, fv, cu, cv
+  resolution: [640, 480]
+  rostopic: /a6/cam0/image_raw
